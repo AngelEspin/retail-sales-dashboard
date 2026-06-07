@@ -137,7 +137,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["Resumen General", "Demografia y Producto", "Analisis Temporal"])
+tab1, tab2, tab3, tab4 = st.tabs(["Resumen General", "Demografia y Producto", "Analisis Temporal", "Perfil del Cliente"])
 
 with tab1:
     c1, c2 = st.columns(2)
@@ -332,6 +332,71 @@ with tab3:
     st.caption("El treemap muestra el peso relativo de cada combinacion categoria-mes. "
                "Los trimestres agrupan la estacionalidad: T1 supera a los demas. "
                "El ticket por dia confirma que Sabado y Lunes tienen el gasto promedio mas alto.")
+
+with tab4:
+    c7, c8 = st.columns(2)
+    with c7:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Distribucion de Edad de los Clientes</div>', unsafe_allow_html=True)
+        fig = px.histogram(dff, x="Age", nbins=20, color_discrete_sequence=["#4E79A7"],
+                           labels={"Age":"Edad","count":"Clientes"})
+        fig.update_layout(height=280, margin=dict(t=10,b=10),
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2, dtick=5)
+        fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c8:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Categoria Preferida por Genero</div>', unsafe_allow_html=True)
+        cg = dff.groupby(["Gender","Product Category"]).agg(Transacciones=("Transaction ID","count"), Ingresos=("Total Amount","sum")).reset_index()
+        fig = px.bar(cg, x="Gender", y="Transacciones", color="Product Category",
+                     color_discrete_map=COL_CAT, text_auto=True, barmode="group",
+                     labels={"Gender":"","Product Category":"","Transacciones":""})
+        fig.update_layout(height=280, margin=dict(t=10,b=10),
+                          legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    c9, c10 = st.columns(2)
+    with c9:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Preferencia de Categoria por Grupo Etario</div>', unsafe_allow_html=True)
+        ae = dff.groupby(["GrupoEdad","Product Category"])["Total Amount"].sum().reset_index()
+        fig = px.bar(ae, x="GrupoEdad", y="Total Amount", color="Product Category",
+                     color_discrete_map=COL_CAT, text_auto="$,.0f", barmode="relative",
+                     category_orders={"GrupoEdad":["18-25","26-35","36-45","46-55","56-65"]})
+        fig.update_layout(height=280, margin=dict(t=10,b=10),
+                          legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_traces(textfont_size=9)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c10:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Volumen de Transacciones por Categoria</div>', unsafe_allow_html=True)
+        vc = dff["Product Category"].value_counts().reset_index()
+        vc.columns = ["Categoria","Transacciones"]
+        fig = px.bar(vc, x="Categoria", y="Transacciones", color="Categoria",
+                     color_discrete_map=COL_CAT, text_auto=True)
+        fig.update_layout(height=280, margin=dict(t=10,b=10), showlegend=False,
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.caption("La edad se distribuye uniformemente entre 18 y 64. "
+               "Clothing es la categoria mas popular en ambos generos. "
+               "El gasto por grupo etario muestra que 26-35 y 46-55 concentran los mayores ingresos "
+               "en todas las categorias.")
 
 st.markdown("---")
 st.markdown("""

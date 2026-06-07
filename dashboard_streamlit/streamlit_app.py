@@ -29,7 +29,6 @@ THEME_LAYOUT = dict(
     plot_bgcolor="#f5f5f5",
     hovermode="x unified",
     dragmode=False,
-    margin=dict(l=16, r=16, t=40, b=64),
 )
 AXIS_STYLE = dict(
     showline=True, linecolor="#d0d0d0", linewidth=1,
@@ -109,39 +108,40 @@ with col1:
     ))
     fig1.add_hline(y=avg_monthly, line=dict(color="#999", width=1.5, dash="dash"),
                    annotation_text=f"Promedio ${avg_monthly:,.0f}", annotation_position="bottom right")
-    fig1.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title="Ingresos ($)", height=320)
+    fig1.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title="Ingresos ($)", height=320, margin=dict(l=16, r=16, t=40, b=64))
     fig1.update_xaxes(**AXIS_STYLE, tickangle=45)
     fig1.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
     st.plotly_chart(fig1, use_container_width=True)
 
     cats_visibles = sorted(dff["Product Category"].unique())
-    if categoria_sel == "Todas":
-        titulo_breakdown = "Desglose por categoria"
+    if not cats_visibles:
+        st.caption("Sin datos para los filtros seleccionados")
     else:
-        titulo_breakdown = f"Tendencia: {categoria_sel}"
-    st.caption(titulo_breakdown)
-    cm = dff.groupby(["Product Category", "NombreMes"])["Total Amount"].sum().reset_index()
-    fig1b = go.Figure()
-    for cat in ["Beauty", "Clothing", "Electronics"]:
-        if cat not in cats_visibles:
-            continue
-        sub = cm[cm["Product Category"] == cat]
-        fig1b.add_trace(go.Scatter(
-            x=sub["NombreMes"], y=sub["Total Amount"],
-            mode="lines+markers",
-            name=cat,
-            line=dict(color=COL_CAT[cat], width=2.5),
-            marker=dict(size=7, color=COL_CAT[cat], line=dict(color="white", width=1)),
-            hovertemplate="%{x}<br>%{y:$,.0f}<extra>%{legend}</extra>",
-        ))
-    fig1b.update_layout(
-        **THEME_LAYOUT, title=None, height=220, showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-        margin=dict(l=16, r=16, t=10, b=48),
-    )
-    fig1b.update_xaxes(**AXIS_STYLE, tickangle=45)
-    fig1b.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
-    st.plotly_chart(fig1b, use_container_width=True)
+        if categoria_sel == "Todas":
+            titulo_breakdown = "Desglose por categoria"
+        else:
+            titulo_breakdown = f"Tendencia: {categoria_sel}"
+        st.caption(titulo_breakdown)
+        cm = dff.groupby(["Product Category", "NombreMes"])["Total Amount"].sum().reset_index()
+        fig1b = go.Figure()
+        for cat in ["Beauty", "Clothing", "Electronics"]:
+            if cat not in cats_visibles:
+                continue
+            sub = cm[cm["Product Category"] == cat]
+            fig1b.add_trace(go.Scatter(
+                x=sub["NombreMes"], y=sub["Total Amount"],
+                mode="lines+markers",
+                name=cat,
+                line=dict(color=COL_CAT[cat], width=2.5),
+                marker=dict(size=7, color=COL_CAT[cat], line=dict(color="white", width=1)),
+                hovertemplate="%{x}<br>%{y:$,.0f}<extra>%{legend}</extra>",
+            ))
+        fig1b.update_layout(**THEME_LAYOUT, title=None, height=220, showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+            margin=dict(l=16, r=16, t=10, b=48))
+        fig1b.update_xaxes(**AXIS_STYLE, tickangle=45)
+        fig1b.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
+        st.plotly_chart(fig1b, use_container_width=True)
 
 with col2:
     st.subheader("Ingresos por Categoria")
@@ -159,7 +159,7 @@ with col2:
         hovertemplate="%{y}<br>%{x:$,.0f}<extra></extra>",
     ))
     fig2.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title=None,
-                       height=260, xaxis=dict(visible=False))
+                       height=260, xaxis=dict(visible=False), margin=dict(l=16, r=16, t=40, b=48))
     fig2.update_yaxes(**AXIS_STYLE)
     fig2.update_traces(textfont_size=13, textangle=0)
     st.plotly_chart(fig2, use_container_width=True)
@@ -184,7 +184,8 @@ with col2:
         ))
     fig2b.update_layout(**THEME_LAYOUT, title=None, height=240, showlegend=True,
                         xaxis_title="Cantidad", yaxis_title="Precio por Unidad ($)",
-                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                        margin=dict(l=16, r=16, t=10, b=48))
     fig2b.update_xaxes(**AXIS_STYLE, dtick=1)
     fig2b.update_yaxes(**AXIS_STYLE, tickprefix="$")
     st.plotly_chart(fig2b, use_container_width=True)
@@ -208,7 +209,8 @@ with col3:
         ))
     fig3.update_layout(**THEME_LAYOUT, barmode="group", title=None, xaxis_title=None,
                        yaxis_title="Ingresos ($)", height=380,
-                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
+                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+                       margin=dict(l=16, r=16, t=40, b=64))
     fig3.update_xaxes(**AXIS_STYLE)
     fig3.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
     fig3.update_traces(textfont_size=11)
@@ -229,7 +231,8 @@ with col4:
         hovertemplate="%{y}<br>%{x}<br>$%{z:,.0f}<extra></extra>",
     ))
     fig4.update_layout(**THEME_LAYOUT, title=None, height=380,
-                       xaxis=dict(side="bottom"), yaxis=dict(title=None))
+                       xaxis=dict(side="bottom"), yaxis=dict(title=None),
+                       margin=dict(l=16, r=16, t=40, b=64))
     fig4.update_xaxes(**AXIS_STYLE, tickangle=45)
     fig4.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig4, use_container_width=True)

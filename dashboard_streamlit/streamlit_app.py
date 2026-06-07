@@ -2,23 +2,26 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from plotly.colors import sequential
 from pathlib import Path
 
 st.set_page_config(page_title="Ventas Minoristas 2023 — Grupo 2", page_icon=":bar_chart:", layout="wide")
+
+RAW_URL = "https://raw.githubusercontent.com/RISHIshrivas/Retail-Sales-data-analysis/main/retail_sales_dataset.csv"
+
+MESES = {
+    1:"01-Enero", 2:"02-Febrero", 3:"03-Marzo", 4:"04-Abril",
+    5:"05-Mayo", 6:"06-Junio", 7:"07-Julio", 8:"08-Agosto",
+    9:"09-Septiembre", 10:"10-Octubre", 11:"11-Noviembre", 12:"12-Diciembre",
+}
+DIAS = {
+    0:"1-Lunes", 1:"2-Martes", 2:"3-Miercoles", 3:"4-Jueves",
+    4:"5-Viernes", 5:"6-Sabado", 6:"7-Domingo",
+}
 
 COL_CAT = {"Beauty": "#4E79A7", "Clothing": "#F28E2B", "Electronics": "#59A14F"}
 COL_GEN = {"Female": "#E15759", "Male": "#4E79A7"}
 ORDEN_MESES = ["01-Enero","02-Febrero","03-Marzo","04-Abril","05-Mayo","06-Junio",
                "07-Julio","08-Agosto","09-Septiembre","10-Octubre","11-Noviembre","12-Diciembre"]
-
-CSV_PATH = Path(__file__).parent / "retail_sales_clean.csv"
-
-@st.cache_data
-def load_data():
-    return pd.read_csv(CSV_PATH, parse_dates=["Date"])
-
-df = load_data()
 
 THEME_LAYOUT = dict(
     font=dict(family="Segoe UI, Arial, sans-serif", size=13),
@@ -34,6 +37,24 @@ AXIS_STYLE = dict(
     title_font=dict(size=13),
     tickfont=dict(size=12),
 )
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv(RAW_URL)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Anio"] = df["Date"].dt.year
+    df["Mes"] = df["Date"].dt.month
+    df["NombreMes"] = df["Mes"].map(MESES)
+    df["Trimestre"] = "T" + df["Date"].dt.quarter.astype(str)
+    df["DiaSemana"] = df["Date"].dt.dayofweek.map(DIAS)
+    df["TipoDia"] = df["Date"].dt.dayofweek.apply(lambda d: "Fin de semana" if d >= 5 else "Entre semana")
+    df["GrupoEdad"] = pd.cut(df["Age"], bins=[18, 25, 35, 45, 55, 65],
+                              labels=["18-25", "26-35", "36-45", "46-55", "56-65"],
+                              include_lowest=True, right=True).astype(str)
+    df["NivelPrecio"] = df["Price per Unit"].apply(lambda p: "Bajo (<=$50)" if p <= 50 else "Alto (>=$300)")
+    return df
+
+df = load_data()
 
 st.sidebar.markdown("## Filtros")
 trimestres = ["Todos"] + sorted(df["Trimestre"].unique())

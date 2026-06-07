@@ -338,15 +338,33 @@ with tab4:
     with c7:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Distribucion de Edad por Genero</div>', unsafe_allow_html=True)
-        fig = px.violin(dff, y="Age", color="Gender", box=True, points=False,
-                        color_discrete_map=COL_GEN, orientation="v",
-                        labels={"Age":"Edad","Gender":"","count":"Clientes"})
-        fig.update_layout(height=280, margin=dict(t=10,b=10),
-                          legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
-                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                          xaxis=dict(title=None), yaxis=dict(title=""))
-        fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2, dtick=5)
-        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        try:
+            from scipy.stats import gaussian_kde
+            import numpy as np
+            x_grid = np.linspace(15, 68, 300)
+            fig = go.Figure()
+            for gen in ["Female","Male"]:
+                data = dff[dff["Gender"]==gen]["Age"]
+                kde = gaussian_kde(data)(x_grid)
+                fig.add_trace(go.Scatter(x=x_grid, y=kde, mode="lines", fill="tozeroy",
+                    name=gen, line=dict(color=COL_GEN[gen], width=2.5),
+                    hovertemplate=f"{gen}<br>Edad: %{{x:.0f}}<br>Densidad: %{{y:.4f}}<extra></extra>"))
+            fig.update_layout(height=280, margin=dict(t=10,b=10),
+                legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                xaxis=dict(title="Edad", dtick=5), yaxis=dict(title=""))
+            fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+            fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2, visible=False)
+        except ImportError:
+            fig = px.histogram(dff, x="Age", nbins=25, color="Gender",
+                barmode="overlay", opacity=0.5, color_discrete_map=COL_GEN,
+                labels={"Age":"Edad","count":"Clientes","Gender":""})
+            fig.update_layout(height=280, margin=dict(t=10,b=10),
+                legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                xaxis=dict(title=None), yaxis=dict(title=""))
+            fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2, dtick=5)
+            fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with c8:

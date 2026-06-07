@@ -200,21 +200,24 @@ with tab2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Patrones de Compra: Precio vs Cantidad</div>', unsafe_allow_html=True)
         sd = dff.sample(min(500,len(dff)), random_state=42)
-        fig = px.scatter(sd, x="Quantity", y="Price per Unit", color="Product Category",
-            size="Total Amount", size_max=28, color_discrete_map=COL_CAT,
-            labels={"Quantity":"Cantidad","Price per Unit":"Precio Unitario ($)","Product Category":""},
-            hover_data={"Total Amount":":$,.0f","Quantity":True,"Price per Unit":True})
-        fig.update_layout(height=380, legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
-            hovermode="closest", margin=dict(t=20,b=20),
+        sd["Count"] = 1
+        ag = sd.groupby(["Product Category","Quantity","Price per Unit"], as_index=False).agg(Transacciones=("Count","sum"), Monto=("Total Amount","sum"))
+        fig = px.scatter(ag, x="Quantity", y="Price per Unit", color="Product Category",
+            size="Transacciones", size_max=30, color_discrete_map=COL_CAT,
+            facet_col="Product Category", facet_col_wrap=3,
+            labels={"Quantity":"Cantidad","Price per Unit":"Precio ($)","Product Category":""},
+            hover_data={"Transacciones":True,"Monto":":$,.0f"})
+        fig.update_layout(height=340, showlegend=False,
+            margin=dict(t=10,b=20,l=0,r=0),
             plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)")
         fig.update_xaxes(gridcolor="#e0e0e0", dtick=1, linecolor="#888", linewidth=1.2)
-        fig.update_yaxes(gridcolor="#e0e0e0", tickprefix="$", linecolor="#888", linewidth=1.2)
-        fig.update_traces(marker=dict(line=dict(width=1,color="rgba(0,0,0,0.15)")))
+        fig.update_yaxes(gridcolor="#e0e0e0", tickprefix="$", linecolor="#888", linewidth=1.2, range=[0,550])
+        fig.update_traces(marker=dict(line=dict(width=1,color="white")))
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     st.caption("Las barras agrupadas comparan ingresos por genero dentro de cada grupo etario. "
-               "El grafico de burbujas revela tres clusters naturales: Electronica (precio alto, 1-2 unidades), "
-               "Belleza (precio bajo, 3-4 unidades) y Ropa (posicion intermedia).")
+               "Cada categoria tiene su propio panel de precio vs cantidad, el tamano de la burbuja "
+               "refleja la cantidad de transacciones en cada combinacion.")
 
 with tab3:
     c5, c6 = st.columns(2)

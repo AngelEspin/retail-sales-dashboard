@@ -337,10 +337,12 @@ with tab4:
     c7, c8 = st.columns(2)
     with c7:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Distribucion de Edad de los Clientes</div>', unsafe_allow_html=True)
-        fig = px.histogram(dff, x="Age", nbins=20, color_discrete_sequence=["#4E79A7"],
-                           labels={"Age":"Edad","count":"Clientes"})
+        st.markdown('<div class="section-title">Distribucion de Edad por Genero</div>', unsafe_allow_html=True)
+        fig = px.histogram(dff, x="Age", nbins=20, color="Gender", barmode="overlay",
+                           color_discrete_map=COL_GEN, opacity=0.65,
+                           labels={"Age":"Edad","count":"Clientes","Gender":""})
         fig.update_layout(height=280, margin=dict(t=10,b=10),
+                          legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
                           plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                           xaxis=dict(title=None), yaxis=dict(title=""))
         fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2, dtick=5)

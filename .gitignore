@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.egg-info/
+
+# Tableau generated files
+*.hyper
+*.twb
+*.twbx
+hyperd.log
+
+# Raw data (keep only clean CSV in dashboard_streamlit)
+/retail_sales_dataset.csv
+
+# VS Code
+.vscode/
+.idea/
+*.log

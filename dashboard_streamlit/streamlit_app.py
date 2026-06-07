@@ -137,7 +137,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["Resumen General", "Demografia y Producto", "Analisis Temporal", "Perfil del Cliente"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Resumen General", "Demografia y Producto", "Analisis Temporal", "Perfil del Cliente", "Nivel de Precio"])
 
 with tab1:
     c1, c2 = st.columns(2)
@@ -330,7 +330,7 @@ with tab3:
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     st.caption("El treemap muestra el peso relativo de cada combinacion categoria-mes. "
-               "Los trimestres agrupan la estacionalidad: T1 supera a los demas. "
+               "Los trimestres agrupan la estacionalidad: T4 y T2 son los mas fuertes y T3 el mas debil. "
                "El ticket por dia confirma que Sabado y Lunes tienen el gasto promedio mas alto.")
 
 with tab4:
@@ -406,6 +406,129 @@ with tab4:
                "Clothing es la categoria mas popular en ambos generos. "
                "El gasto por grupo etario muestra que 26-35 y 46-55 concentran los mayores ingresos "
                "en todas las categorias.")
+
+with tab5:
+    # Esta vista compara los dos niveles de precio, por eso ignora a proposito
+    # el filtro "Nivel de Precio" del sidebar (usa el resto de filtros).
+    mp = pd.Series(True, index=df.index)
+    if trimestre_sel != "Todos": mp &= df["Trimestre"] == trimestre_sel
+    if genero_sel != "Todos": mp &= df["Gender"] == genero_sel
+    if categoria_sel != "Todas": mp &= df["Product Category"] == categoria_sel
+    dffp = df[mp]
+
+    NIV_ORDER = ["Bajo (<=$50)", "Alto (>=$300)"]
+    NIV_COL = {"Bajo (<=$50)": "#59A14F", "Alto (>=$300)": "#E15759"}
+
+    c11, c12 = st.columns(2)
+    with c11:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Concentracion: Transacciones vs Ingresos</div>', unsafe_allow_html=True)
+        agg = (dffp.groupby("NivelPrecio")
+               .agg(Trans=("Transaction ID", "count"), Ing=("Total Amount", "sum"))
+               .reindex(NIV_ORDER).fillna(0))
+        tot_tr, tot_in = agg["Trans"].sum(), agg["Ing"].sum()
+        pct_tr = agg["Trans"] / tot_tr * 100 if tot_tr else agg["Trans"]
+        pct_in = agg["Ing"] / tot_in * 100 if tot_in else agg["Ing"]
+        fig = go.Figure()
+        for niv in NIV_ORDER:
+            fig.add_trace(go.Bar(
+                x=["% Transacciones", "% Ingresos"], y=[pct_tr[niv], pct_in[niv]],
+                name=niv, marker_color=NIV_COL[niv],
+                text=[f"{pct_tr[niv]:.0f}%", f"{pct_in[niv]:.0f}%"],
+                textposition="inside", insidetextanchor="middle",
+                textfont=dict(size=14, color="white"),
+                hovertemplate="%{x}<br>" + niv + ": %{y:.1f}%<extra></extra>"))
+        fig.update_layout(barmode="stack", height=360,
+            legend=dict(orientation="h", y=1.02, x=0.5, xanchor="center"),
+            margin=dict(t=20, b=20), plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(title=None), yaxis=dict(title="", range=[0, 100]))
+        fig.update_xaxes(linecolor="#888", linewidth=1.2)
+        fig.update_yaxes(ticksuffix="%", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c12:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Ticket Promedio por Nivel de Precio</div>', unsafe_allow_html=True)
+        tk = (dffp.groupby("NivelPrecio")["Total Amount"].mean()
+              .reindex(NIV_ORDER).reset_index())
+        tk.columns = ["NivelPrecio", "Ticket"]
+        fig = px.bar(tk, x="NivelPrecio", y="Ticket", color="NivelPrecio",
+                     color_discrete_map=NIV_COL, text_auto="$,.0f",
+                     category_orders={"NivelPrecio": NIV_ORDER})
+        fig.update_layout(height=360, margin=dict(t=20, b=20), showlegend=False,
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_xaxes(linecolor="#888", linewidth=1.2)
+        fig.update_traces(textfont_size=14, textposition="outside")
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    c13, c14 = st.columns(2)
+    with c13:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Composicion por Nivel de Precio segun Categoria</div>', unsafe_allow_html=True)
+        comp = (dffp.groupby(["Product Category", "NivelPrecio"])["Transaction ID"]
+                .count().reset_index(name="n"))
+        comp["pct"] = comp["n"] / comp.groupby("Product Category")["n"].transform("sum") * 100
+        fig = px.bar(comp, x="Product Category", y="pct", color="NivelPrecio",
+                     color_discrete_map=NIV_COL, barmode="relative",
+                     category_orders={"NivelPrecio": NIV_ORDER,
+                                      "Product Category": ["Beauty", "Clothing", "Electronics"]},
+                     labels={"Product Category": "", "pct": "", "NivelPrecio": ""})
+        fig.update_traces(texttemplate="%{y:.0f}%", textposition="inside",
+                          textfont=dict(size=12, color="white"))
+        fig.update_layout(height=320, margin=dict(t=20, b=20),
+                          legend=dict(orientation="h", y=1.02, x=0.5, xanchor="center"),
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title="", range=[0, 100]))
+        fig.update_yaxes(ticksuffix="%", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_xaxes(linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c14:
+        alto = dffp[dffp["NivelPrecio"] == "Alto (>=$300)"]
+        bajo = dffp[dffp["NivelPrecio"] == "Bajo (<=$50)"]
+        n_tot = len(dffp); in_tot = dffp["Total Amount"].sum()
+        sh_tr = len(alto) / n_tot * 100 if n_tot else 0
+        sh_in = alto["Total Amount"].sum() / in_tot * 100 if in_tot else 0
+        t_alto = alto["Total Amount"].mean() if len(alto) else 0
+        t_bajo = bajo["Total Amount"].mean() if len(bajo) else 0
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">El Hallazgo Clave</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="padding:0.6rem 0.4rem;">
+          <p style="color:#444; font-size:0.92rem; line-height:1.5; margin:0 0 0.9rem;">
+            En este dataset el precio se asigna de forma independiente de la categoria:
+            las tres venden productos baratos y caros casi en la misma proporcion. Por eso
+            la variable que de verdad explica los ingresos no es <b>que</b> se vende, sino
+            <b>a que precio</b>.
+          </p>
+          <div style="display:flex; gap:0.6rem; text-align:center;">
+            <div style="flex:1; background:#fdecec; border-radius:10px; padding:0.7rem 0.3rem;">
+              <div style="font-size:1.7rem; font-weight:700; color:#E15759;">{sh_tr:.0f}%</div>
+              <div style="font-size:0.72rem; color:#888;">de las transacciones<br>son caras (>=$300)</div>
+            </div>
+            <div style="flex:1; background:#fdecec; border-radius:10px; padding:0.7rem 0.3rem;">
+              <div style="font-size:1.7rem; font-weight:700; color:#E15759;">{sh_in:.0f}%</div>
+              <div style="font-size:0.72rem; color:#888;">de los ingresos<br>vienen de ellas</div>
+            </div>
+          </div>
+          <div style="text-align:center; margin-top:0.9rem; font-size:0.9rem; color:#444;">
+            Ticket promedio &nbsp;
+            <span style="color:#E15759; font-weight:700;">${t_alto:,.0f}</span>
+            <span style="color:#aaa;">(alto)</span> &nbsp;vs&nbsp;
+            <span style="color:#59A14F; font-weight:700;">${t_bajo:,.0f}</span>
+            <span style="color:#aaa;">(bajo)</span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.caption("El nivel de precio es la variable mas decisiva del dataset. Un grupo chico de "
+               "ventas caras concentra la mayor parte de los ingresos, mientras que las tres "
+               "categorias se reparten ambos niveles casi por igual (composicion ~60% bajo / 40% alto). "
+               "Esta vista ignora a proposito el filtro 'Nivel de Precio' del sidebar para poder "
+               "comparar los dos niveles.")
 
 st.markdown("---")
 st.markdown("""

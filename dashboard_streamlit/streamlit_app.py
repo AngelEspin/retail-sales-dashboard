@@ -183,21 +183,18 @@ with tab3:
     c5, c6 = st.columns(2)
     with c5:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Mapa de Calor: Ingresos por Categoria y Mes</div>', unsafe_allow_html=True)
-        hp = dff.groupby(["NombreMes","Product Category"])["Total Amount"].sum().reset_index()
-        hp = hp[hp["NombreMes"].isin(ORDEN_MESES)]
-        hp = hp.pivot(index="Product Category", columns="NombreMes", values="Total Amount")
-        hp = hp[[c for c in ORDEN_MESES if c in hp.columns]].fillna(0)
-        fig = go.Figure(data=go.Heatmap(
-            z=hp.values, x=hp.columns, y=hp.index,
-            text=hp.values, texttemplate="$%{text:,.0f}", textfont=dict(size=11),
-            colorscale=[[0,"#f0f4f8"],[0.3,"#a8c4e0"],[0.6,"#4E79A7"],[1,"#1a3a5c"]],
-            hovertemplate="%{y}<br>%{x}<br>$%{z:,.0f}<extra></extra>"))
-        fig.update_layout(height=380, margin=dict(t=20,b=50),
-            plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
-            xaxis=dict(side="bottom"), yaxis=dict(title=None))
-        fig.update_xaxes(gridcolor="#e0e0e0", tickangle=45, linecolor="#888", linewidth=1.2)
-        fig.update_yaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.markdown('<div class="section-title">Distribucion de Ingresos: Categoria y Mes</div>', unsafe_allow_html=True)
+        tm = dff.groupby(["Product Category","MesLabel"])["Total Amount"].sum().reset_index()
+        tm = tm[tm["MesLabel"].isin(list(MESES_LABEL.values()))]
+        tm["_n"] = tm["MesLabel"].map({v:k for k,v in MESES_LABEL.items()})
+        tm = tm.sort_values("_n")
+        fig = px.treemap(tm, path=["Product Category","MesLabel"], values="Total Amount",
+                         color="Product Category", color_discrete_map=COL_CAT)
+        fig.update_traces(textinfo="label+value", texttemplate="%{label}<br>$%{value:,.0f}",
+                          hovertemplate="%{label}<br>$%{value:,.0f}<extra></extra>",
+                          textfont=dict(size=11))
+        fig.update_layout(height=380, margin=dict(t=20,b=20),
+            plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with c6:
@@ -228,9 +225,8 @@ with tab3:
         fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
-    st.caption("El mapa de calor cruza categoria y mes para detectar estacionalidad. "
-               "El grafico polar organiza los dias de la semana en un circulo, "
-               "revelando los picos de actividad de Viernes a Domingo.")
+    st.caption("El treemap muestra el peso relativo de cada combinacion categoria-mes. "
+               "El grafico de barras por dia revela los picos de actividad de Viernes a Sabado.")
 
 st.markdown("---")
 st.markdown("""

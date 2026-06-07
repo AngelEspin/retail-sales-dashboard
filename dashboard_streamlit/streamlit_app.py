@@ -25,8 +25,8 @@ ORDEN_MESES = ["01-Enero","02-Febrero","03-Marzo","04-Abril","05-Mayo","06-Junio
 
 THEME_LAYOUT = dict(
     font=dict(family="Segoe UI, Arial, sans-serif", size=13),
-    paper_bgcolor="#fafafa",
-    plot_bgcolor="#fafafa",
+    paper_bgcolor="#f5f5f5",
+    plot_bgcolor="#f5f5f5",
     hovermode="x unified",
     dragmode=False,
     margin=dict(l=16, r=16, t=40, b=64),
@@ -96,6 +96,7 @@ with col1:
     st.subheader("Tendencia Mensual de Ingresos")
     monthly = dff.groupby("NombreMes", sort=False)["Total Amount"].sum()
     monthly = monthly.reindex([m for m in ORDEN_MESES if m in monthly.index]).dropna()
+    avg_monthly = monthly.mean()
 
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(
@@ -106,33 +107,49 @@ with col1:
         name="Ingresos",
         hovertemplate="%{x}<br>%{y:$,.0f}<extra></extra>",
     ))
-    fig1.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title="Ingresos ($)", height=340)
+    fig1.add_hline(y=avg_monthly, line=dict(color="#999", width=1.5, dash="dash"),
+                   annotation_text=f"Promedio ${avg_monthly:,.0f}", annotation_position="bottom right")
+    fig1.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title="Ingresos ($)", height=320)
     fig1.update_xaxes(**AXIS_STYLE, tickangle=45)
     fig1.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
     st.plotly_chart(fig1, use_container_width=True)
 
+    cats_visibles = sorted(dff["Product Category"].unique())
     if categoria_sel == "Todas":
-        st.caption("Desglose por categoria")
-        cm = dff.groupby(["Product Category", "NombreMes"])["Total Amount"].sum().reset_index()
-        fig1b = go.Figure()
-        for cat in ["Beauty", "Clothing", "Electronics"]:
-            sub = cm[cm["Product Category"] == cat]
-            fig1b.add_trace(go.Scatter(
-                x=sub["NombreMes"], y=sub["Total Amount"],
-                mode="lines+markers",
-                name=cat,
-                line=dict(color=COL_CAT[cat], width=2.5),
-                marker=dict(size=7, color=COL_CAT[cat], line=dict(color="white", width=1)),
-                hovertemplate="%{x}<br>%{y:$,.0f}<extra>%{legend}</extra>",
-            ))
-        fig1b.update_layout(**THEME_LAYOUT, title=None, height=240, showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
-        fig1b.update_xaxes(**AXIS_STYLE, tickangle=45)
-        fig1b.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
-        st.plotly_chart(fig1b, use_container_width=True)
+        titulo_breakdown = "Desglose por categoria"
+    else:
+        titulo_breakdown = f"Tendencia: {categoria_sel}"
+    st.caption(titulo_breakdown)
+    cm = dff.groupby(["Product Category", "NombreMes"])["Total Amount"].sum().reset_index()
+    fig1b = go.Figure()
+    for cat in ["Beauty", "Clothing", "Electronics"]:
+        if cat not in cats_visibles:
+            continue
+        sub = cm[cm["Product Category"] == cat]
+        fig1b.add_trace(go.Scatter(
+            x=sub["NombreMes"], y=sub["Total Amount"],
+            mode="lines+markers",
+            name=cat,
+            line=dict(color=COL_CAT[cat], width=2.5),
+            marker=dict(size=7, color=COL_CAT[cat], line=dict(color="white", width=1)),
+            hovertemplate="%{x}<br>%{y:$,.0f}<extra>%{legend}</extra>",
+        ))
+    fig1b.update_layout(
+        **THEME_LAYOUT, title=None, height=220, showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+        margin=dict(l=16, r=16, t=10, b=48),
+    )
+    fig1b.update_xaxes(**AXIS_STYLE, tickangle=45)
+    fig1b.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
+    st.plotly_chart(fig1b, use_container_width=True)
 
 with col2:
     st.subheader("Ingresos por Categoria")
-    ca = dff.groupby("Product Category").agg(Ingresos=("Total Amount", "sum"), Unidades=("Quantity", "sum")).sort_values("Ingresos").reset_index()
+    ca = dff.groupby("Product Category").agg(
+        Ingresos=("Total Amount", "sum"),
+        Unidades=("Quantity", "sum"),
+        Ticket=("Total Amount", "mean"),
+    ).sort_values("Ingresos").reset_index()
     fig2 = go.Figure()
     fig2.add_trace(go.Bar(
         y=ca["Product Category"], x=ca["Ingresos"], orientation="h",
@@ -141,24 +158,35 @@ with col2:
         textposition="outside",
         hovertemplate="%{y}<br>%{x:$,.0f}<extra></extra>",
     ))
-    fig2.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title=None, height=260, xaxis=dict(visible=False))
+    fig2.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title=None,
+                       height=260, xaxis=dict(visible=False))
     fig2.update_yaxes(**AXIS_STYLE)
     fig2.update_traces(textfont_size=13, textangle=0)
     st.plotly_chart(fig2, use_container_width=True)
 
-    st.caption("Unidades por categoria")
-    cu = ca.sort_values("Unidades")
+    st.caption("Precio vs Cantidad por transaccion")
+    scatter = dff.sample(min(500, len(dff)), random_state=42)
     fig2b = go.Figure()
-    fig2b.add_trace(go.Bar(
-        y=cu["Product Category"], x=cu["Unidades"], orientation="h",
-        marker_color=[COL_CAT[c] for c in cu["Product Category"]],
-        text=cu["Unidades"],
-        textposition="outside",
-        hovertemplate="%{y}<br>%{x} unidades<extra></extra>",
-    ))
-    fig2b.update_layout(**THEME_LAYOUT, title=None, xaxis_title=None, yaxis_title=None, height=220, xaxis=dict(visible=False))
-    fig2b.update_yaxes(**AXIS_STYLE)
-    fig2b.update_traces(textfont_size=13, textangle=0)
+    for cat in ["Beauty", "Clothing", "Electronics"]:
+        sub = scatter[scatter["Product Category"] == cat]
+        fig2b.add_trace(go.Scatter(
+            x=sub["Quantity"], y=sub["Price per Unit"],
+            mode="markers",
+            name=cat,
+            marker=dict(
+                color=COL_CAT[cat], size=sub["Total Amount"] / sub["Total Amount"].max() * 30 + 6,
+                line=dict(color="rgba(0,0,0,0.15)", width=1),
+                opacity=0.75,
+            ),
+            hovertemplate="<b>%{text}</b><br>Cantidad: %{x}<br>Precio: $%{y:.0f}<br>Total: $%{customdata:,.0f}<extra></extra>",
+            text=sub["Product Category"],
+            customdata=sub["Total Amount"],
+        ))
+    fig2b.update_layout(**THEME_LAYOUT, title=None, height=240, showlegend=True,
+                        xaxis_title="Cantidad", yaxis_title="Precio por Unidad ($)",
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
+    fig2b.update_xaxes(**AXIS_STYLE, dtick=1)
+    fig2b.update_yaxes(**AXIS_STYLE, tickprefix="$")
     st.plotly_chart(fig2b, use_container_width=True)
 
 st.markdown("---")
@@ -178,10 +206,12 @@ with col3:
             textposition="outside",
             hovertemplate="%{x}<br>%{y:$,.0f}<extra>%{legend}</extra>",
         ))
-    fig3.update_layout(**THEME_LAYOUT, barmode="group", title=None, xaxis_title=None, yaxis_title="Ingresos ($)",
-                       height=400, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
+    fig3.update_layout(**THEME_LAYOUT, barmode="group", title=None, xaxis_title=None,
+                       yaxis_title="Ingresos ($)", height=380,
+                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
     fig3.update_xaxes(**AXIS_STYLE)
     fig3.update_yaxes(**AXIS_STYLE, tickprefix="$", separatethousands=True)
+    fig3.update_traces(textfont_size=11)
     st.plotly_chart(fig3, use_container_width=True)
 
 with col4:
@@ -195,10 +225,10 @@ with col4:
         text=heat.values,
         texttemplate="$%{text:,.0f}",
         textfont=dict(size=11),
-        colorscale="Blues",
+        colorscale=[[0, "#e8f0fe"], [0.5, "#4E79A7"], [1, "#1a3a5c"]],
         hovertemplate="%{y}<br>%{x}<br>$%{z:,.0f}<extra></extra>",
     ))
-    fig4.update_layout(**THEME_LAYOUT, title=None, height=400,
+    fig4.update_layout(**THEME_LAYOUT, title=None, height=380,
                        xaxis=dict(side="bottom"), yaxis=dict(title=None))
     fig4.update_xaxes(**AXIS_STYLE, tickangle=45)
     fig4.update_yaxes(**AXIS_STYLE)

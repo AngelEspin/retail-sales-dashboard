@@ -215,9 +215,37 @@ with tab2:
         fig.update_traces(marker=dict(line=dict(width=1,color="white")))
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
+    c3b, c4b = st.columns(2)
+    with c3b:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Distribucion de Ingresos por Genero</div>', unsafe_allow_html=True)
+        gr = dff.groupby("Gender")["Total Amount"].sum().reset_index()
+        fig = px.pie(gr, values="Total Amount", names="Gender", color="Gender",
+                     color_discrete_map=COL_GEN, hole=0.45)
+        fig.update_traces(textinfo="label+percent+value", texttemplate="%{label}<br>$%{value:,.0f}<br>(%{percent})")
+        fig.update_layout(height=280, margin=dict(t=10,b=10), showlegend=False,
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c4b:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Ingresos por Nivel de Precio</div>', unsafe_allow_html=True)
+        nl = dff.groupby("NivelPrecio")["Total Amount"].sum().reset_index()
+        nl_col = {"Bajo (<=$50)": "#59A14F", "Alto (>=$300)": "#E15759"}
+        fig = px.bar(nl, x="NivelPrecio", y="Total Amount", color="NivelPrecio",
+                     color_discrete_map=nl_col, text_auto="$,.0f")
+        fig.update_layout(height=280, margin=dict(t=10,b=10), showlegend=False,
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     st.caption("Las barras agrupadas comparan ingresos por genero dentro de cada grupo etario. "
                "Cada categoria tiene su propio panel de precio vs cantidad, el tamano de la burbuja "
-               "refleja la cantidad de transacciones en cada combinacion.")
+               "refleja la cantidad de transacciones en cada combinacion. El donut y la barra de nivel "
+               "de precio complementan la vision: la brecha por genero es minima y los productos de "
+               "precio alto (>=$300) concentran mas ingresos que los economicos.")
 
 with tab3:
     c5, c6 = st.columns(2)
@@ -265,8 +293,45 @@ with tab3:
         fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
+    c5b, c6b = st.columns(2)
+    with c5b:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Ingresos por Trimestre</div>', unsafe_allow_html=True)
+        tq = dff.groupby(["Trimestre","Product Category"])["Total Amount"].sum().reset_index()
+        tq = tq[tq["Trimestre"].isin(["T1","T2","T3","T4"])]
+        fig = px.bar(tq, x="Trimestre", y="Total Amount", color="Product Category",
+                     color_discrete_map=COL_CAT, text_auto="$,.0f",
+                     barmode="relative", category_orders={"Trimestre":["T1","T2","T3","T4"]})
+        fig.update_layout(height=280, margin=dict(t=10,b=10),
+                          legend=dict(orientation="h",y=1.02,x=0.5,xanchor="center"),
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_traces(textfont_size=10)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with c6b:
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Ticket Promedio por Dia</div>', unsafe_allow_html=True)
+        td = dff.groupby("DiaNum").agg(Ticket=("Total Amount","mean"), Transacciones=("Transaction ID","count")).reset_index()
+        td = td.sort_values("DiaNum")
+        td["DiaSemana"] = td["DiaNum"].map(DIAS)
+        fig = px.bar(td, x="DiaSemana", y="Ticket", color="DiaSemana",
+                     color_discrete_map={d:c for d,c in zip(ORDEN_DIAS,COL_DOW)},
+                     text_auto="$,.2f", category_orders={"DiaSemana":ORDEN_DIAS})
+        fig.update_traces(hovertemplate="%{x}<br>Ticket: $%{y:,.2f}<br>Transacciones: %{customdata}<extra></extra>",
+                          customdata=td["Transacciones"])
+        fig.update_layout(height=280, margin=dict(t=10,b=10), showlegend=False,
+                          plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                          xaxis=dict(title=None), yaxis=dict(title=""))
+        fig.update_yaxes(tickprefix="$", gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        fig.update_xaxes(gridcolor="#e0e0e0", linecolor="#888", linewidth=1.2)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     st.caption("El treemap muestra el peso relativo de cada combinacion categoria-mes. "
-               "El grafico de barras por dia revela los picos de actividad de Viernes a Sabado.")
+               "Los trimestres agrupan la estacionalidad: T1 supera a los demas. "
+               "El ticket por dia confirma que Sabado y Lunes tienen el gasto promedio mas alto.")
 
 st.markdown("---")
 st.markdown("""

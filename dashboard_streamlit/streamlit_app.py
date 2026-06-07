@@ -41,7 +41,11 @@ def load_data():
 
 df = load_data()
 
-st.sidebar.markdown("## Filtros")
+st.sidebar.markdown("""
+<div style="background:#2c5f8a; color:white; padding:0.6rem 1rem; border-radius:8px; margin-bottom:1rem; text-align:center; font-weight:600; font-size:0.95rem;">
+    Filtros del Dashboard
+</div>
+""", unsafe_allow_html=True)
 trimestre_sel = st.sidebar.selectbox("Trimestre", ["Todos"] + sorted(df["Trimestre"].unique()))
 genero_sel = st.sidebar.selectbox("Genero", ["Todos"] + sorted(df["Gender"].unique()))
 categoria_sel = st.sidebar.selectbox("Categoria", ["Todas"] + sorted(df["Product Category"].unique()))
@@ -56,33 +60,61 @@ dff = df[mask].copy()
 
 st.markdown("""
 <style>
-.block-container { padding-top: 1.5rem; }
+.block-container { padding-top: 1rem; }
 h1,h2,h3,h4 { font-family: 'Segoe UI', Arial, sans-serif; }
-.kpi-card { background:#ffffff; border-radius:12px; padding:1rem 0.5rem; text-align:center; border-left:4px solid #4E79A7; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-.kpi-label { font-size:0.75rem; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; }
-.kpi-value { font-size:1.5rem; font-weight:700; color:#1a2634; margin-top:2px; }
-.chart-card { background:#ffffff; border-radius:12px; padding:1rem 1rem 0.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:1rem; }
-.section-title { font-size:1.05rem; font-weight:600; color:#1a2634; margin-bottom:0.25rem; }
-.tab-content { padding: 0.5rem 0; }
-hr { margin:1.5rem 0; opacity:0.25; }
-.stTabs [data-baseweb="tab-list"] { gap: 2px; }
-.stTabs [data-baseweb="tab"] { font-weight: 500; }
+
+.main-header {
+    background: linear-gradient(135deg, #1a2634 0%, #2c5f8a 100%);
+    padding: 1.2rem 1.5rem 1rem;
+    border-radius: 14px;
+    text-align: center;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(26,38,52,0.15);
+}
+.main-header h1 { color: white; font-size: 1.9rem; margin: 0; font-weight: 600; letter-spacing: -0.3px; }
+.main-header p { color: rgba(255,255,255,0.8); margin: 0.2rem 0 0; font-size: 0.95rem; }
+.main-header span { color: #f2c94c; }
+
+[data-testid="stSidebar"] { background-color: #f7f8fa; border-right: 1px solid #e8e8e8; }
+[data-testid="stSidebar"] .sidebar-content { padding-top: 0.5rem; }
+
+.kpi-row { margin-bottom: 1.2rem; }
+.kpi-card {
+    background:#ffffff; border-radius:10px; padding:0.8rem 0.3rem;
+    text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    border-top: 3px solid #4E79A7; transition: transform 0.15s;
+}
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.kpi-label { font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:0.4px; }
+.kpi-value { font-size:1.4rem; font-weight:700; color:#1a2634; margin-top:1px; }
+
+.chart-card {
+    background:#ffffff; border-radius:10px; padding:0.8rem 0.8rem 0.3rem;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:0.8rem;
+    border: 1px solid #f0f0f0;
+}
+.section-title { font-size:1rem; font-weight:600; color:#1a2634; margin-bottom:0.15rem; padding-left: 0.3rem; border-left: 3px solid #4E79A7; }
+
+.stTabs [data-baseweb="tab-list"] { gap: 0; border-bottom: 2px solid #e8e8e8; }
+.stTabs [data-baseweb="tab"] {
+    font-weight: 500; height: auto; padding: 0.6rem 1.2rem;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.stTabs [aria-selected="true"] {
+    color: #2c5f8a !important; border-bottom-color: #2c5f8a !important;
+}
+
+.stCaption { color: #777; font-size: 0.82rem; padding-left: 0.3rem; }
+hr { margin:1.2rem 0; opacity:0.2; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div style="text-align:center; padding: 0.5rem 0 0.25rem;">
-    <h1 style="font-size:2.2rem; font-weight:700; color:#1a2634; letter-spacing:-0.5px; margin:0;">
-        Retail Sales Dashboard 2023
-    </h1>
-    <p style="font-size:1rem; color:#6c757d; margin-top:0.2rem;">
-        Grupo 2 — Angel Espin · Carlos Ramirez &nbsp;|&nbsp;
-        <span style="color:#4E79A7;">Analisis Visual de Ventas Minoristas</span>
-    </p>
+<div class="main-header">
+    <h1>Retail Sales Dashboard 2023</h1>
+    <p>Grupo 2 — Angel Espin · Carlos Ramirez &nbsp;|&nbsp; <span>Analisis Visual de Ventas Minoristas</span></p>
 </div>
 """, unsafe_allow_html=True)
-
-st.markdown("---")
 
 tot_rev = dff["Total Amount"].sum()
 tot_trans = len(dff)
@@ -91,14 +123,19 @@ tot_units = dff["Quantity"].sum()
 avg_age = dff["Age"].mean()
 n_cats = dff["Product Category"].nunique()
 
+KC = ["#2c5f8a","#59A14F","#F28E2B","#E15759","#4E79A7","#B07AA1"]
 kc = st.columns(6)
 for i,(lbl,val) in enumerate(zip(
     ["Ingresos","Transacciones","Ticket Promedio","Unidades","Edad Promedio","Categorias"],
     [f"${tot_rev:,.0f}",f"{tot_trans:,}",f"${avg_ticket:,.2f}",f"{tot_units:,}",f"{avg_age:.1f} anos",str(n_cats)]
 )):
-    kc[i].markdown(f'<div class="kpi-card"><div class="kpi-label">{lbl}</div><div class="kpi-value">{val}</div></div>', unsafe_allow_html=True)
+    kc[i].markdown(f'<div class="kpi-card" style="border-top-color:{KC[i]}"><div class="kpi-label">{lbl}</div><div class="kpi-value">{val}</div></div>', unsafe_allow_html=True)
 
-st.markdown("---")
+st.markdown(f"""
+<div style="text-align:right; font-size:0.8rem; color:#999; margin: -0.5rem 0 0.5rem;">
+    Datos: {df['Date'].min().date()} a {df['Date'].max().date()}
+</div>
+""", unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs(["Resumen General", "Demografia y Producto", "Analisis Temporal"])
 
@@ -230,9 +267,9 @@ with tab3:
 
 st.markdown("---")
 st.markdown("""
-<div style="text-align:center; color:#888; font-size:0.85rem; padding:0.5rem 0;">
-    Fuente: <i>Retail Sales Dataset</i> (Kaggle) &nbsp;|&nbsp;
-    Datos sinteticos 2023 &nbsp;|&nbsp;
+<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:0.5rem 0;">
+    <span style="color:#4E79A7;">Retail Sales Dataset</span> (Kaggle) &nbsp;·&nbsp;
+    Datos sinteticos 2023 &nbsp;·&nbsp;
     Proyecto Academico — Grupo 2
 </div>
 """, unsafe_allow_html=True)

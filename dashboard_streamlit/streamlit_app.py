@@ -24,17 +24,17 @@ ORDEN_MESES = ["01-Enero","02-Febrero","03-Marzo","04-Abril","05-Mayo","06-Junio
                "07-Julio","08-Agosto","09-Septiembre","10-Octubre","11-Noviembre","12-Diciembre"]
 
 THEME_LAYOUT = dict(
-    font=dict(family="Segoe UI, Arial, sans-serif", size=13),
-    paper_bgcolor="#f5f5f5",
-    plot_bgcolor="#f5f5f5",
+    font=dict(family="Segoe UI, Arial, sans-serif", size=14),
+    paper_bgcolor="#ffffff",
+    plot_bgcolor="#ffffff",
     hovermode="x unified",
     dragmode=False,
 )
 AXIS_STYLE = dict(
-    showline=True, linecolor="#d0d0d0", linewidth=1,
-    gridcolor="#eaeaea", zerolinecolor="#e0e0e0",
-    title_font=dict(size=13),
-    tickfont=dict(size=12),
+    showline=True, linecolor="#666666", linewidth=1.2,
+    gridcolor="#d4d4d4", zerolinecolor="#aaaaaa",
+    title_font=dict(size=13, color="#333333"),
+    tickfont=dict(size=12, color="#444444"),
 )
 
 @st.cache_data
